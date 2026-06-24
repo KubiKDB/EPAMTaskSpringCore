@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.daniel.taskspringcore.dao.TraineeDAO;
 import com.daniel.taskspringcore.model.Trainee;
+import com.daniel.taskspringcore.service.util.IdGenerator;
 import com.daniel.taskspringcore.service.util.UserCredentialGenerator;
 
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,8 @@ public class TraineeService {
         trainee.setPassword(credentialGenerator.generatePassword());
         trainee.setActive(true);
         if (trainee.getUserId() == null) {
-            trainee.setUserId(nextId());
+            trainee.setUserId(IdGenerator.nextId(
+                    traineeDAO.findAll().stream().map(Trainee::getUserId).toList()));
         }
         traineeDAO.save(trainee);
         log.info("Created trainee '{}' with id {}", trainee.getUsername(), trainee.getUserId());
@@ -64,15 +66,5 @@ public class TraineeService {
 
     public Collection<Trainee> selectAll() {
         return traineeDAO.findAll();
-    }
-
-    private String nextId() {
-        long max = traineeDAO.findAll().stream()
-                .map(Trainee::getUserId)
-                .filter(id -> id != null && id.matches("\\d+"))
-                .mapToLong(Long::parseLong)
-                .max()
-                .orElse(0L);
-        return String.valueOf(max + 1);
     }
 }

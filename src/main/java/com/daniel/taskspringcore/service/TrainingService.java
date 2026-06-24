@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.daniel.taskspringcore.dao.TrainingDAO;
 import com.daniel.taskspringcore.model.Training;
+import com.daniel.taskspringcore.service.util.IdGenerator;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +24,8 @@ public class TrainingService {
 
     public Training create(Training training) {
         if (training.getTrainingId() == null) {
-            training.setTrainingId(nextId());
+            training.setTrainingId(IdGenerator.nextId(
+                    trainingDAO.findAll().stream().map(Training::getTrainingId).toList()));
         }
         trainingDAO.save(training);
         log.info("Created training '{}' with id {}", training.getTrainingName(), training.getTrainingId());
@@ -37,15 +39,5 @@ public class TrainingService {
 
     public Collection<Training> selectAll() {
         return trainingDAO.findAll();
-    }
-
-    private String nextId() {
-        long max = trainingDAO.findAll().stream()
-                .map(Training::getTrainingId)
-                .filter(id -> id != null && id.matches("\\d+"))
-                .mapToLong(Long::parseLong)
-                .max()
-                .orElse(0L);
-        return String.valueOf(max + 1);
     }
 }
