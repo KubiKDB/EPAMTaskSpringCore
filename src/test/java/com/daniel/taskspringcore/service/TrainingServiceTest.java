@@ -1,12 +1,12 @@
 package com.daniel.taskspringcore.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Duration;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,14 +14,29 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import com.daniel.taskspringcore.dao.TraineeDAO;
+import com.daniel.taskspringcore.dao.TrainerDAO;
 import com.daniel.taskspringcore.dao.TrainingDAO;
+import com.daniel.taskspringcore.dao.TrainingTypeDAO;
+import com.daniel.taskspringcore.exception.EntityNotFoundException;
+import com.daniel.taskspringcore.model.Trainee;
+import com.daniel.taskspringcore.model.Trainer;
 import com.daniel.taskspringcore.model.Training;
 import com.daniel.taskspringcore.model.TrainingType;
+import com.daniel.taskspringcore.service.util.AuthenticationService;
 
 class TrainingServiceTest {
 
     @Mock
     private TrainingDAO trainingDAO;
+    @Mock
+    private TraineeDAO traineeDAO;
+    @Mock
+    private TrainerDAO trainerDAO;
+    @Mock
+    private TrainingTypeDAO trainingTypeDAO;
+    @Mock
+    private AuthenticationService authenticationService;
     @InjectMocks
     private TrainingService service;
 
@@ -30,35 +45,47 @@ class TrainingServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    private Training newTraining(String id) {
-        Training t = new Training();
-        t.setTrainingId(id);
-        t.setTrainingName("Morning Yoga");
-        t.setTrainingType(TrainingType.Yoga);
-        t.setTrainingDate(new Date());
-        t.setTrainingDuration(Duration.ofMinutes(60));
-        return t;
-    }
-
     @Test
-    void createAssignsIdWhenMissing() {
-        when(trainingDAO.findAll()).thenReturn(List.of());
-        Training result = service.create(newTraining(null));
-        assertThat(result.getTrainingId()).isEqualTo("1");
+    void createSavesTrainingAndLinksTrainerToTrainee() {
+        Trainee trainee = new Trainee();
+        trainee.setUsername("john.smith");
+        Trainer trainer = new Trainer();
+        trainer.setUsername("anna.jones");
+        TrainingType yoga = new TrainingType("Yoga");
+        when(traineeDAO.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
+        when(trainerDAO.findByUsername("anna.jones")).thenReturn(Optional.of(trainer));
+        when(trainingTypeDAO.findByName("Yoga")).thenReturn(Optional.of(yoga));
+
+        Training result = service.create("john.smith", "pw", "john.smith", "anna.jones",
+                "Morning Yoga", "Yoga", LocalDate.now(), 60);
+
+        assertThat(result.getTrainingName()).isEqualTo("Morning Yoga");
+        assertThat(trainee.getTrainers()).contains(trainer);
         verify(trainingDAO).save(result);
+        verify(traineeDAO).update(trainee);
     }
 
     @Test
-    void createKeepsProvidedId() {
-        Training result = service.create(newTraining("99"));
-        assertThat(result.getTrainingId()).isEqualTo("99");
-        verify(trainingDAO).save(result);
+    void createThrowsWhenTraineeMissing() {
+        when(traineeDAO.findByUsername("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create("a", "pw", "missing", "anna.jones",
+                "Morning Yoga", "Yoga", LocalDate.now(), 60))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
-    void selectDelegatesToDao() {
-        Training t = newTraining("1");
-        when(trainingDAO.findById("1")).thenReturn(t);
-        assertThat(service.select("1")).isSameAs(t);
+    void createThrowsWhenTrainingTypeMissing() {
+        Trainee trainee = new Trainee();
+        trainee.setUsername("john.smith");
+        Trainer trainer = new Trainer();
+        trainer.setUsername("anna.jones");
+        when(traineeDAO.findByUsername("john.smith")).thenReturn(Optional.of(trainee));
+        when(trainerDAO.findByUsername("anna.jones")).thenReturn(Optional.of(trainer));
+        when(trainingTypeDAO.findByName("Unknown")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create("a", "pw", "john.smith", "anna.jones",
+                "Morning Yoga", "Unknown", LocalDate.now(), 60))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 }

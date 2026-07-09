@@ -1,9 +1,0 @@
-# trainee;<userId>;<firstName>;<lastName>;<username>;<password>;<isActive>;<dateOfBirth yyyy-MM-dd>;<address>
-# trainer;<userId>;<firstName>;<lastName>;<username>;<password>;<isActive>;<specialization>
-# training;<trainingId>;<traineeId>;<trainerId>;<trainingName>;<trainingType>;<trainingDate yyyy-MM-dd>;<durationMinutes>
-trainee;1;John;Smith;John.Smith;p4Ssw0rdJS;true;1990-01-01;221B Baker St
-trainee;2;Jane;Doe;Jane.Doe;qZ9xKv2mLp;true;1995-05-20;10 Downing St
-trainer;1;Anna;Jones;Anna.Jones;rT7bNw3kQs;true;Yoga
-trainer;2;Mike;Brown;Mike.Brown;hY2cVf8dWe;true;Strength
-training;1;1;1;Morning Yoga;Yoga;2026-06-23;60
-training;2;2;2;Strength Basics;Strength;2026-06-24;45

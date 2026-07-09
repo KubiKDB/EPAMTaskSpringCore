@@ -1,41 +1,42 @@
 package com.daniel.taskspringcore.dao;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 import com.daniel.taskspringcore.model.Trainee;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Repository
 public class TraineeDAO {
 
-    private Map<String, Trainee> traineeStorage;
-
-    @Autowired
-    public void setTraineeStorage(@Qualifier("traineeStorage") Map<String, Trainee> traineeStorage) {
-        this.traineeStorage = traineeStorage;
-    }
+    @PersistenceContext
+    private EntityManager em;
 
     public Trainee save(Trainee trainee) {
-        return traineeStorage.put(trainee.getUserId(), trainee);
+        em.persist(trainee);
+        return trainee;
     }
 
     public Trainee update(Trainee trainee) {
-        return traineeStorage.put(trainee.getUserId(), trainee);
+        return em.merge(trainee);
     }
 
-    public Trainee findById(String traineeId) {
-        return traineeStorage.get(traineeId);
+    public Optional<Trainee> findByUsername(String username) {
+        return em.createQuery("SELECT t FROM Trainee t WHERE t.username = :username", Trainee.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst();
     }
 
-    public Collection<Trainee> findAll() {
-        return traineeStorage.values();
+    public List<Trainee> findAll() {
+        return em.createQuery("SELECT t FROM Trainee t", Trainee.class).getResultList();
     }
 
-    public void delete(String traineeId) {
-        traineeStorage.remove(traineeId);
+    public void deleteByUsername(String username) {
+        findByUsername(username).ifPresent(em::remove);
     }
 }

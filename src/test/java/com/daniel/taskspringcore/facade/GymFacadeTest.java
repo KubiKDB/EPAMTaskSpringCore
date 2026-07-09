@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -34,49 +37,112 @@ class GymFacadeTest {
     }
 
     @Test
-    void traineeOperationsDelegateToService() {
-        Trainee t = new Trainee();
-        when(traineeService.create(t)).thenReturn(t);
-        when(traineeService.update(t)).thenReturn(t);
-        when(traineeService.select("1")).thenReturn(t);
+    void createOperationsDelegateToServices() {
+        Trainee trainee = new Trainee();
+        Trainer trainer = new Trainer();
+        when(traineeService.create(trainee)).thenReturn(trainee);
+        when(trainerService.create(trainer)).thenReturn(trainer);
 
-        assertThat(facade.createTrainee(t)).isSameAs(t);
-        assertThat(facade.updateTrainee(t)).isSameAs(t);
-        assertThat(facade.getTrainee("1")).isSameAs(t);
-        facade.deleteTrainee("1");
+        assertThat(facade.createTrainee(trainee)).isSameAs(trainee);
+        assertThat(facade.createTrainer(trainer)).isSameAs(trainer);
 
-        verify(traineeService).create(t);
-        verify(traineeService).update(t);
-        verify(traineeService).select("1");
-        verify(traineeService).delete("1");
+        verify(traineeService).create(trainee);
+        verify(trainerService).create(trainer);
     }
 
     @Test
-    void trainerOperationsDelegateToService() {
-        Trainer t = new Trainer();
-        when(trainerService.create(t)).thenReturn(t);
-        when(trainerService.update(t)).thenReturn(t);
-        when(trainerService.select("1")).thenReturn(t);
+    void authenticationOperationsDelegateToServices() {
+        facade.authenticateTrainee("john.smith", "pw");
+        facade.authenticateTrainer("anna.jones", "pw");
 
-        assertThat(facade.createTrainer(t)).isSameAs(t);
-        assertThat(facade.updateTrainer(t)).isSameAs(t);
-        assertThat(facade.getTrainer("1")).isSameAs(t);
-
-        verify(trainerService).create(t);
-        verify(trainerService).update(t);
-        verify(trainerService).select("1");
+        verify(traineeService).authenticate("john.smith", "pw");
+        verify(trainerService).authenticate("anna.jones", "pw");
     }
 
     @Test
-    void trainingOperationsDelegateToService() {
-        Training t = new Training();
-        when(trainingService.create(t)).thenReturn(t);
-        when(trainingService.select("1")).thenReturn(t);
+    void selectByUsernameOperationsDelegateToServices() {
+        Trainee trainee = new Trainee();
+        Trainer trainer = new Trainer();
+        when(traineeService.selectByUsername("a", "pw", "john.smith")).thenReturn(trainee);
+        when(trainerService.selectByUsername("a", "pw", "anna.jones")).thenReturn(trainer);
 
-        assertThat(facade.createTraining(t)).isSameAs(t);
-        assertThat(facade.getTraining("1")).isSameAs(t);
+        assertThat(facade.getTraineeByUsername("a", "pw", "john.smith")).isSameAs(trainee);
+        assertThat(facade.getTrainerByUsername("a", "pw", "anna.jones")).isSameAs(trainer);
+    }
 
-        verify(trainingService).create(t);
-        verify(trainingService).select("1");
+    @Test
+    void passwordChangeOperationsDelegateToServices() {
+        facade.changeTraineePassword("john.smith", "old", "new");
+        facade.changeTrainerPassword("anna.jones", "old", "new");
+
+        verify(traineeService).changePassword("john.smith", "old", "new");
+        verify(trainerService).changePassword("anna.jones", "old", "new");
+    }
+
+    @Test
+    void updateOperationsDelegateToServices() {
+        Trainee trainee = new Trainee();
+        Trainer trainer = new Trainer();
+        when(traineeService.update("a", "pw", trainee)).thenReturn(trainee);
+        when(trainerService.update("a", "pw", trainer)).thenReturn(trainer);
+
+        assertThat(facade.updateTrainee("a", "pw", trainee)).isSameAs(trainee);
+        assertThat(facade.updateTrainer("a", "pw", trainer)).isSameAs(trainer);
+    }
+
+    @Test
+    void activateDeactivateOperationsDelegateToServices() {
+        facade.activateTrainee("a", "pw", "john.smith");
+        facade.deactivateTrainee("a", "pw", "john.smith");
+        facade.activateTrainer("a", "pw", "anna.jones");
+        facade.deactivateTrainer("a", "pw", "anna.jones");
+
+        verify(traineeService).activate("a", "pw", "john.smith");
+        verify(traineeService).deactivate("a", "pw", "john.smith");
+        verify(trainerService).activate("a", "pw", "anna.jones");
+        verify(trainerService).deactivate("a", "pw", "anna.jones");
+    }
+
+    @Test
+    void deleteTraineeDelegatesToService() {
+        facade.deleteTraineeByUsername("a", "pw", "john.smith");
+
+        verify(traineeService).deleteByUsername("a", "pw", "john.smith");
+    }
+
+    @Test
+    void trainingsListOperationsDelegateToServices() {
+        facade.getTraineeTrainings("a", "pw", "john.smith", null, null, null, null);
+        facade.getTrainerTrainings("a", "pw", "anna.jones", null, null, null);
+
+        verify(traineeService).getTrainings("a", "pw", "john.smith", null, null, null, null);
+        verify(trainerService).getTrainings("a", "pw", "anna.jones", null, null, null);
+    }
+
+    @Test
+    void addTrainingDelegatesToService() {
+        Training training = new Training();
+        LocalDate date = LocalDate.now();
+        when(trainingService.create("a", "pw", "john.smith", "anna.jones", "Yoga Session", "Yoga", date, 60))
+                .thenReturn(training);
+
+        assertThat(facade.addTraining("a", "pw", "john.smith", "anna.jones", "Yoga Session", "Yoga", date, 60))
+                .isSameAs(training);
+    }
+
+    @Test
+    void getUnassignedTrainersDelegatesToService() {
+        facade.getUnassignedTrainers("a", "pw", "john.smith");
+
+        verify(trainerService).getUnassignedTrainers("a", "pw", "john.smith");
+    }
+
+    @Test
+    void updateTraineeTrainersDelegatesToService() {
+        Trainee trainee = new Trainee();
+        List<String> trainerUsernames = List.of("anna.jones");
+        when(traineeService.updateTrainersList("a", "pw", "john.smith", trainerUsernames)).thenReturn(trainee);
+
+        assertThat(facade.updateTraineeTrainers("a", "pw", "john.smith", trainerUsernames)).isSameAs(trainee);
     }
 }
