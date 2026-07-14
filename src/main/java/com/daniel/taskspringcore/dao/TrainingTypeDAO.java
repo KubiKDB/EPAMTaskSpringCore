@@ -3,27 +3,25 @@ package com.daniel.taskspringcore.dao;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
 import com.daniel.taskspringcore.model.TrainingType;
+import com.daniel.taskspringcore.repository.TrainingTypeRepository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
-@Repository
+@Component
 public class TrainingTypeDAO {
 
-    @PersistenceContext
-    private EntityManager em;
+    private final TrainingTypeRepository trainingTypeRepository;
+
+    public TrainingTypeDAO(TrainingTypeRepository trainingTypeRepository) {
+        this.trainingTypeRepository = trainingTypeRepository;
+    }
 
     public Optional<TrainingType> findByName(String trainingTypeName) {
-        return em.createQuery("SELECT t FROM TrainingType t WHERE t.trainingTypeName = :name", TrainingType.class)
-                .setParameter("name", trainingTypeName)
-                .getResultStream()
-                .findFirst();
+        return trainingTypeRepository.findByTrainingTypeName(trainingTypeName);
     }
 
     public List<TrainingType> findAll() {
-        return em.createQuery("SELECT t FROM TrainingType t", TrainingType.class).getResultList();
+        return trainingTypeRepository.findAll();
     }
 }

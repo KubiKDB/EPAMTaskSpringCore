@@ -2,6 +2,7 @@ package com.daniel.taskspringcore.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -21,6 +22,10 @@ import com.daniel.taskspringcore.dao.TraineeDAO;
 import com.daniel.taskspringcore.dao.TrainerDAO;
 import com.daniel.taskspringcore.dao.TrainingDAO;
 import com.daniel.taskspringcore.dao.UserDAO;
+import com.daniel.taskspringcore.dto.CreateTraineeDTO;
+import com.daniel.taskspringcore.dto.TraineeDTO;
+import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.exception.AuthenticationException;
 import com.daniel.taskspringcore.exception.EntityNotFoundException;
 import com.daniel.taskspringcore.model.Trainee;
@@ -64,20 +69,17 @@ class TraineeServiceTest {
                 .thenReturn("John.Smith");
         when(credentialGenerator.generatePassword()).thenReturn("abc1234567");
 
-        Trainee result = service.create(newTrainee());
+        UserCredentialsDTO result = service.create(new CreateTraineeDTO("John", "Smith", null, null));
 
-        assertThat(result.getUsername()).isEqualTo("John.Smith");
-        assertThat(result.getPassword()).isEqualTo("abc1234567");
-        assertThat(result.isActive()).isTrue();
-        verify(traineeDAO).save(result);
+        assertThat(result.username()).isEqualTo("John.Smith");
+        assertThat(result.password()).isEqualTo("abc1234567");
+        verify(traineeDAO).save(any(Trainee.class));
     }
 
     @Test
     void createRejectsMissingFirstName() {
-        Trainee t = newTrainee();
-        t.setFirstName(null);
-
-        assertThatThrownBy(() -> service.create(t)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> service.create(new CreateTraineeDTO(null, "Smith", null, null)))
+                .isInstanceOf(RuntimeException.class);
     }
 
     @Test
@@ -95,9 +97,10 @@ class TraineeServiceTest {
         t.setUsername("john.smith");
         when(traineeDAO.findByUsername("john.smith")).thenReturn(Optional.of(t));
 
-        Trainee result = service.selectByUsername("john.smith", "pw", "john.smith");
+        TraineeDTO result = service.selectByUsername("john.smith", "pw", "john.smith");
 
-        assertThat(result).isSameAs(t);
+        assertThat(result.username()).isEqualTo("john.smith");
+        assertThat(result.firstName()).isEqualTo("John");
     }
 
     @Test
@@ -126,6 +129,21 @@ class TraineeServiceTest {
         service.changePassword("john.smith", "oldPassword1", "newPassword1");
 
         assertThat(t.getPassword()).isEqualTo("newPassword1");
+        verify(traineeDAO).update(t);
+    }
+
+    @Test
+    void updateModifiesProfileFields() {
+        Trainee t = newTrainee();
+        t.setUsername("john.smith");
+        when(traineeDAO.findByUsername("john.smith")).thenReturn(Optional.of(t));
+
+        TraineeDTO result = service.update("john.smith", "pw",
+                new TraineeDTO("john.smith", "Johnny", "Smithers", null, "New St", true, List.of()));
+
+        assertThat(result.firstName()).isEqualTo("Johnny");
+        assertThat(result.lastName()).isEqualTo("Smithers");
+        assertThat(result.address()).isEqualTo("New St");
         verify(traineeDAO).update(t);
     }
 
@@ -184,9 +202,9 @@ class TraineeServiceTest {
         trainer.setUsername("anna.jones");
         when(trainerDAO.findByUsername("anna.jones")).thenReturn(Optional.of(trainer));
 
-        Trainee result = service.updateTrainersList("john.smith", "pw", "john.smith", List.of("anna.jones"));
+        TraineeDTO result = service.updateTrainersList("john.smith", "pw", "john.smith", List.of("anna.jones"));
 
-        assertThat(result.getTrainers()).containsExactly(trainer);
+        assertThat(result.trainers()).extracting(TrainerDTO::username).containsExactly("anna.jones");
         verify(traineeDAO).update(t);
     }
 

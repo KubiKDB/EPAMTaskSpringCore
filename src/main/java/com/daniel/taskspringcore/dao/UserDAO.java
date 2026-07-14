@@ -3,27 +3,25 @@ package com.daniel.taskspringcore.dao;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
 import com.daniel.taskspringcore.model.User;
+import com.daniel.taskspringcore.repository.UserRepository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
-@Repository
+@Component
 public class UserDAO {
 
-    @PersistenceContext
-    private EntityManager em;
+    private final UserRepository userRepository;
+
+    public UserDAO(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     public Optional<User> findByUsername(String username) {
-        return em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class)
-                .setParameter("username", username)
-                .getResultStream()
-                .findFirst();
+        return userRepository.findByUsername(username);
     }
 
     public List<String> findAllUsernames() {
-        return em.createQuery("SELECT u.username FROM User u", String.class).getResultList();
+        return userRepository.findAllUsernames();
     }
 }

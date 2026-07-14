@@ -3,45 +3,37 @@ package com.daniel.taskspringcore.dao;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
 import com.daniel.taskspringcore.model.Trainer;
+import com.daniel.taskspringcore.repository.TrainerRepository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
-@Repository
+@Component
 public class TrainerDAO {
 
-    @PersistenceContext
-    private EntityManager em;
+    private final TrainerRepository trainerRepository;
+
+    public TrainerDAO(TrainerRepository trainerRepository) {
+        this.trainerRepository = trainerRepository;
+    }
 
     public Trainer save(Trainer trainer) {
-        em.persist(trainer);
-        return trainer;
+        return trainerRepository.save(trainer);
     }
 
     public Trainer update(Trainer trainer) {
-        return em.merge(trainer);
+        return trainerRepository.update(trainer);
     }
 
     public Optional<Trainer> findByUsername(String username) {
-        return em.createQuery("SELECT t FROM Trainer t WHERE t.username = :username", Trainer.class)
-                .setParameter("username", username)
-                .getResultStream()
-                .findFirst();
+        return trainerRepository.findByUsername(username);
     }
 
     public List<Trainer> findAll() {
-        return em.createQuery("SELECT t FROM Trainer t", Trainer.class).getResultList();
+        return trainerRepository.findAll();
     }
 
     public List<Trainer> findNotAssignedToTrainee(String traineeUsername) {
-        return em.createQuery("""
-                        SELECT tr FROM Trainer tr WHERE tr NOT IN (
-                            SELECT tr2 FROM Trainee te JOIN te.trainers tr2 WHERE te.username = :username
-                        )""", Trainer.class)
-                .setParameter("username", traineeUsername)
-                .getResultList();
+        return trainerRepository.findNotAssignedToTrainee(traineeUsername);
     }
 }

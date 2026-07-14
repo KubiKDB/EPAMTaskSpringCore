@@ -10,6 +10,8 @@ import com.daniel.taskspringcore.dao.TraineeDAO;
 import com.daniel.taskspringcore.dao.TrainerDAO;
 import com.daniel.taskspringcore.dao.TrainingDAO;
 import com.daniel.taskspringcore.dao.TrainingTypeDAO;
+import com.daniel.taskspringcore.dto.DtoMapper;
+import com.daniel.taskspringcore.dto.TrainingDTO;
 import com.daniel.taskspringcore.exception.EntityNotFoundException;
 import com.daniel.taskspringcore.model.Trainee;
 import com.daniel.taskspringcore.model.Trainer;
@@ -56,9 +58,9 @@ public class TrainingService {
     }
 
     @Transactional
-    public Training create(String authUsername, String authPassword,
-                           String traineeUsername, String trainerUsername, String trainingName,
-                           String trainingTypeName, LocalDate trainingDate, Integer trainingDurationMinutes) {
+    public TrainingDTO create(String authUsername, String authPassword,
+                              String traineeUsername, String trainerUsername, String trainingName,
+                              String trainingTypeName, LocalDate trainingDate, Integer trainingDurationMinutes) {
         authenticationService.authenticate(authUsername, authPassword);
         ValidationUtils.requireNonBlank(trainingName, "trainingName");
         ValidationUtils.requireNonNull(trainingDate, "trainingDate");
@@ -82,6 +84,6 @@ public class TrainingService {
 
         log.info("Created training '{}' for trainee '{}' with trainer '{}'",
                 trainingName, traineeUsername, trainerUsername);
-        return training;
+        return DtoMapper.toDto(training);
     }
 }

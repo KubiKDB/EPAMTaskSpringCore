@@ -3,40 +3,37 @@ package com.daniel.taskspringcore.dao;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
 import com.daniel.taskspringcore.model.Trainee;
+import com.daniel.taskspringcore.repository.TraineeRepository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
-@Repository
+@Component
 public class TraineeDAO {
 
-    @PersistenceContext
-    private EntityManager em;
+    private final TraineeRepository traineeRepository;
+
+    public TraineeDAO(TraineeRepository traineeRepository) {
+        this.traineeRepository = traineeRepository;
+    }
 
     public Trainee save(Trainee trainee) {
-        em.persist(trainee);
-        return trainee;
+        return traineeRepository.save(trainee);
     }
 
     public Trainee update(Trainee trainee) {
-        return em.merge(trainee);
+        return traineeRepository.update(trainee);
     }
 
     public Optional<Trainee> findByUsername(String username) {
-        return em.createQuery("SELECT t FROM Trainee t WHERE t.username = :username", Trainee.class)
-                .setParameter("username", username)
-                .getResultStream()
-                .findFirst();
+        return traineeRepository.findByUsername(username);
     }
 
     public List<Trainee> findAll() {
-        return em.createQuery("SELECT t FROM Trainee t", Trainee.class).getResultList();
+        return traineeRepository.findAll();
     }
 
     public void deleteByUsername(String username) {
-        findByUsername(username).ifPresent(em::remove);
+        traineeRepository.deleteByUsername(username);
     }
 }

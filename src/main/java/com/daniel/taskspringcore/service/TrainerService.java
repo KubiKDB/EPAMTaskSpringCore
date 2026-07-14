@@ -11,10 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.daniel.taskspringcore.dao.TrainerDAO;
 import com.daniel.taskspringcore.dao.TrainingDAO;
+import com.daniel.taskspringcore.dao.TrainingTypeDAO;
 import com.daniel.taskspringcore.dao.UserDAO;
+import com.daniel.taskspringcore.dto.CreateTrainerDTO;
+import com.daniel.taskspringcore.dto.DtoMapper;
+import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.TrainingDTO;
+import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.exception.EntityNotFoundException;
 import com.daniel.taskspringcore.model.Trainer;
-import com.daniel.taskspringcore.model.Training;
+import com.daniel.taskspringcore.model.TrainingType;
 import com.daniel.taskspringcore.service.util.AuthenticationService;
 import com.daniel.taskspringcore.service.util.UserCredentialGenerator;
 import com.daniel.taskspringcore.service.util.ValidationUtils;
@@ -27,6 +33,7 @@ public class TrainerService {
 
     private TrainerDAO trainerDAO;
     private TrainingDAO trainingDAO;
+    private TrainingTypeDAO trainingTypeDAO;
     private UserDAO userDAO;
     private UserCredentialGenerator credentialGenerator;
     private AuthenticationService authenticationService;
@@ -39,6 +46,11 @@ public class TrainerService {
     @Autowired
     public void setTrainingDAO(TrainingDAO trainingDAO) {
         this.trainingDAO = trainingDAO;
+    }
+
+    @Autowired
+    public void setTrainingTypeDAO(TrainingTypeDAO trainingTypeDAO) {
+        this.trainingTypeDAO = trainingTypeDAO;
     }
 
     @Autowired
@@ -57,18 +69,20 @@ public class TrainerService {
     }
 
     @Transactional
-    public Trainer create(Trainer trainer) {
-        ValidationUtils.requireNonBlank(trainer.getFirstName(), "firstName");
-        ValidationUtils.requireNonBlank(trainer.getLastName(), "lastName");
-        ValidationUtils.requireNonNull(trainer.getSpecialization(), "specialization");
+    public UserCredentialsDTO create(CreateTrainerDTO dto) {
+        ValidationUtils.requireNonBlank(dto.firstName(), "firstName");
+        ValidationUtils.requireNonBlank(dto.lastName(), "lastName");
+        ValidationUtils.requireNonBlank(dto.specialization(), "specialization");
+        TrainingType specialization = findRequiredType(dto.specialization());
         Set<String> existingUsernames = new HashSet<>(userDAO.findAllUsernames());
-        trainer.setUsername(credentialGenerator.generateUsername(
-                trainer.getFirstName(), trainer.getLastName(), existingUsernames));
-        trainer.setPassword(credentialGenerator.generatePassword());
-        trainer.setActive(true);
+        String username = credentialGenerator.generateUsername(
+                dto.firstName(), dto.lastName(), existingUsernames);
+        String password = credentialGenerator.generatePassword();
+        Trainer trainer = new Trainer(dto.firstName(), dto.lastName(), username, password,
+                true, specialization);
         trainerDAO.save(trainer);
-        log.info("Created trainer '{}'", trainer.getUsername());
-        return trainer;
+        log.info("Created trainer '{}'", username);
+        return new UserCredentialsDTO(username, password);
     }
 
     @Transactional(readOnly = true)
@@ -77,10 +91,10 @@ public class TrainerService {
     }
 
     @Transactional(readOnly = true)
-    public Trainer selectByUsername(String authUsername, String authPassword, String username) {
+    public TrainerDTO selectByUsername(String authUsername, String authPassword, String username) {
         authenticationService.authenticate(authUsername, authPassword);
         log.debug("Selecting trainer '{}'", username);
-        return findRequired(username);
+        return DtoMapper.toDto(findRequired(username));
     }
 
     @Transactional
@@ -94,19 +108,19 @@ public class TrainerService {
     }
 
     @Transactional
-    public Trainer update(String authUsername, String authPassword, Trainer updated) {
+    public TrainerDTO update(String authUsername, String authPassword, TrainerDTO updated) {
         authenticationService.authenticate(authUsername, authPassword);
-        ValidationUtils.requireNonBlank(updated.getUsername(), "username");
-        ValidationUtils.requireNonBlank(updated.getFirstName(), "firstName");
-        ValidationUtils.requireNonBlank(updated.getLastName(), "lastName");
-        ValidationUtils.requireNonNull(updated.getSpecialization(), "specialization");
-        Trainer trainer = findRequired(updated.getUsername());
-        trainer.setFirstName(updated.getFirstName());
-        trainer.setLastName(updated.getLastName());
-        trainer.setSpecialization(updated.getSpecialization());
+        ValidationUtils.requireNonBlank(updated.username(), "username");
+        ValidationUtils.requireNonBlank(updated.firstName(), "firstName");
+        ValidationUtils.requireNonBlank(updated.lastName(), "lastName");
+        ValidationUtils.requireNonBlank(updated.specialization(), "specialization");
+        Trainer trainer = findRequired(updated.username());
+        trainer.setFirstName(updated.firstName());
+        trainer.setLastName(updated.lastName());
+        trainer.setSpecialization(findRequiredType(updated.specialization()));
         trainerDAO.update(trainer);
         log.info("Updated trainer '{}'", trainer.getUsername());
-        return trainer;
+        return DtoMapper.toDto(trainer);
     }
 
     @Transactional
@@ -120,18 +134,19 @@ public class TrainerService {
     }
 
     @Transactional(readOnly = true)
-    public List<Training> getTrainings(String authUsername, String authPassword, String username,
-                                       LocalDate fromDate, LocalDate toDate, String traineeName) {
+    public List<TrainingDTO> getTrainings(String authUsername, String authPassword, String username,
+                                          LocalDate fromDate, LocalDate toDate, String traineeName) {
         authenticationService.authenticate(authUsername, authPassword);
         log.debug("Fetching trainings of trainer '{}' with criteria", username);
-        return trainingDAO.findTrainerTrainings(username, fromDate, toDate, traineeName);
+        return DtoMapper.toTrainingDtos(
+                trainingDAO.findTrainerTrainings(username, fromDate, toDate, traineeName));
     }
 
     @Transactional(readOnly = true)
-    public List<Trainer> getUnassignedTrainers(String authUsername, String authPassword, String traineeUsername) {
+    public List<TrainerDTO> getUnassignedTrainers(String authUsername, String authPassword, String traineeUsername) {
         authenticationService.authenticate(authUsername, authPassword);
         log.debug("Fetching trainers not assigned to trainee '{}'", traineeUsername);
-        return trainerDAO.findNotAssignedToTrainee(traineeUsername);
+        return DtoMapper.toTrainerDtos(trainerDAO.findNotAssignedToTrainee(traineeUsername));
     }
 
     // Activate/de-activate is not idempotent: repeating the same action is an error
@@ -150,5 +165,10 @@ public class TrainerService {
     private Trainer findRequired(String username) {
         return trainerDAO.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Trainer not found: " + username));
+    }
+
+    private TrainingType findRequiredType(String trainingTypeName) {
+        return trainingTypeDAO.findByName(trainingTypeName)
+                .orElseThrow(() -> new EntityNotFoundException("Training type not found: " + trainingTypeName));
     }
 }

@@ -13,9 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import com.daniel.taskspringcore.model.Trainee;
-import com.daniel.taskspringcore.model.Trainer;
-import com.daniel.taskspringcore.model.Training;
+import com.daniel.taskspringcore.dto.CreateTraineeDTO;
+import com.daniel.taskspringcore.dto.CreateTrainerDTO;
+import com.daniel.taskspringcore.dto.TraineeDTO;
+import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.TrainingDTO;
+import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
@@ -36,15 +39,25 @@ class GymFacadeTest {
         MockitoAnnotations.openMocks(this);
     }
 
+    private TraineeDTO traineeDto() {
+        return new TraineeDTO("john.smith", "John", "Smith", null, "Main St", true, List.of());
+    }
+
+    private TrainerDTO trainerDto() {
+        return new TrainerDTO("anna.jones", "Anna", "Jones", true, "Yoga");
+    }
+
     @Test
     void createOperationsDelegateToServices() {
-        Trainee trainee = new Trainee();
-        Trainer trainer = new Trainer();
-        when(traineeService.create(trainee)).thenReturn(trainee);
-        when(trainerService.create(trainer)).thenReturn(trainer);
+        CreateTraineeDTO trainee = new CreateTraineeDTO("John", "Smith", null, null);
+        CreateTrainerDTO trainer = new CreateTrainerDTO("Anna", "Jones", "Yoga");
+        UserCredentialsDTO traineeCreds = new UserCredentialsDTO("john.smith", "pw1");
+        UserCredentialsDTO trainerCreds = new UserCredentialsDTO("anna.jones", "pw2");
+        when(traineeService.create(trainee)).thenReturn(traineeCreds);
+        when(trainerService.create(trainer)).thenReturn(trainerCreds);
 
-        assertThat(facade.createTrainee(trainee)).isSameAs(trainee);
-        assertThat(facade.createTrainer(trainer)).isSameAs(trainer);
+        assertThat(facade.createTrainee(trainee)).isSameAs(traineeCreds);
+        assertThat(facade.createTrainer(trainer)).isSameAs(trainerCreds);
 
         verify(traineeService).create(trainee);
         verify(trainerService).create(trainer);
@@ -61,8 +74,8 @@ class GymFacadeTest {
 
     @Test
     void selectByUsernameOperationsDelegateToServices() {
-        Trainee trainee = new Trainee();
-        Trainer trainer = new Trainer();
+        TraineeDTO trainee = traineeDto();
+        TrainerDTO trainer = trainerDto();
         when(traineeService.selectByUsername("a", "pw", "john.smith")).thenReturn(trainee);
         when(trainerService.selectByUsername("a", "pw", "anna.jones")).thenReturn(trainer);
 
@@ -81,8 +94,8 @@ class GymFacadeTest {
 
     @Test
     void updateOperationsDelegateToServices() {
-        Trainee trainee = new Trainee();
-        Trainer trainer = new Trainer();
+        TraineeDTO trainee = traineeDto();
+        TrainerDTO trainer = trainerDto();
         when(traineeService.update("a", "pw", trainee)).thenReturn(trainee);
         when(trainerService.update("a", "pw", trainer)).thenReturn(trainer);
 
@@ -121,8 +134,9 @@ class GymFacadeTest {
 
     @Test
     void addTrainingDelegatesToService() {
-        Training training = new Training();
         LocalDate date = LocalDate.now();
+        TrainingDTO training = new TrainingDTO(1L, "john.smith", "anna.jones",
+                "Yoga Session", "Yoga", date, 60);
         when(trainingService.create("a", "pw", "john.smith", "anna.jones", "Yoga Session", "Yoga", date, 60))
                 .thenReturn(training);
 
@@ -139,7 +153,7 @@ class GymFacadeTest {
 
     @Test
     void updateTraineeTrainersDelegatesToService() {
-        Trainee trainee = new Trainee();
+        TraineeDTO trainee = traineeDto();
         List<String> trainerUsernames = List.of("anna.jones");
         when(traineeService.updateTrainersList("a", "pw", "john.smith", trainerUsernames)).thenReturn(trainee);
 

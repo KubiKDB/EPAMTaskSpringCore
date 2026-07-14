@@ -13,10 +13,14 @@ import com.daniel.taskspringcore.dao.TraineeDAO;
 import com.daniel.taskspringcore.dao.TrainerDAO;
 import com.daniel.taskspringcore.dao.TrainingDAO;
 import com.daniel.taskspringcore.dao.UserDAO;
+import com.daniel.taskspringcore.dto.CreateTraineeDTO;
+import com.daniel.taskspringcore.dto.DtoMapper;
+import com.daniel.taskspringcore.dto.TraineeDTO;
+import com.daniel.taskspringcore.dto.TrainingDTO;
+import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.exception.EntityNotFoundException;
 import com.daniel.taskspringcore.model.Trainee;
 import com.daniel.taskspringcore.model.Trainer;
-import com.daniel.taskspringcore.model.Training;
 import com.daniel.taskspringcore.service.util.AuthenticationService;
 import com.daniel.taskspringcore.service.util.UserCredentialGenerator;
 import com.daniel.taskspringcore.service.util.ValidationUtils;
@@ -65,17 +69,18 @@ public class TraineeService {
     }
 
     @Transactional
-    public Trainee create(Trainee trainee) {
-        ValidationUtils.requireNonBlank(trainee.getFirstName(), "firstName");
-        ValidationUtils.requireNonBlank(trainee.getLastName(), "lastName");
+    public UserCredentialsDTO create(CreateTraineeDTO dto) {
+        ValidationUtils.requireNonBlank(dto.firstName(), "firstName");
+        ValidationUtils.requireNonBlank(dto.lastName(), "lastName");
         Set<String> existingUsernames = new HashSet<>(userDAO.findAllUsernames());
-        trainee.setUsername(credentialGenerator.generateUsername(
-                trainee.getFirstName(), trainee.getLastName(), existingUsernames));
-        trainee.setPassword(credentialGenerator.generatePassword());
-        trainee.setActive(true);
+        String username = credentialGenerator.generateUsername(
+                dto.firstName(), dto.lastName(), existingUsernames);
+        String password = credentialGenerator.generatePassword();
+        Trainee trainee = new Trainee(dto.firstName(), dto.lastName(), username, password,
+                true, dto.dateOfBirth(), dto.address());
         traineeDAO.save(trainee);
-        log.info("Created trainee '{}'", trainee.getUsername());
-        return trainee;
+        log.info("Created trainee '{}'", username);
+        return new UserCredentialsDTO(username, password);
     }
 
     @Transactional(readOnly = true)
@@ -84,10 +89,10 @@ public class TraineeService {
     }
 
     @Transactional(readOnly = true)
-    public Trainee selectByUsername(String authUsername, String authPassword, String username) {
+    public TraineeDTO selectByUsername(String authUsername, String authPassword, String username) {
         authenticationService.authenticate(authUsername, authPassword);
         log.debug("Selecting trainee '{}'", username);
-        return findRequired(username);
+        return DtoMapper.toDto(findRequired(username));
     }
 
     @Transactional
@@ -101,19 +106,19 @@ public class TraineeService {
     }
 
     @Transactional
-    public Trainee update(String authUsername, String authPassword, Trainee updated) {
+    public TraineeDTO update(String authUsername, String authPassword, TraineeDTO updated) {
         authenticationService.authenticate(authUsername, authPassword);
-        ValidationUtils.requireNonBlank(updated.getUsername(), "username");
-        ValidationUtils.requireNonBlank(updated.getFirstName(), "firstName");
-        ValidationUtils.requireNonBlank(updated.getLastName(), "lastName");
-        Trainee trainee = findRequired(updated.getUsername());
-        trainee.setFirstName(updated.getFirstName());
-        trainee.setLastName(updated.getLastName());
-        trainee.setDateOfBirth(updated.getDateOfBirth());
-        trainee.setAddress(updated.getAddress());
+        ValidationUtils.requireNonBlank(updated.username(), "username");
+        ValidationUtils.requireNonBlank(updated.firstName(), "firstName");
+        ValidationUtils.requireNonBlank(updated.lastName(), "lastName");
+        Trainee trainee = findRequired(updated.username());
+        trainee.setFirstName(updated.firstName());
+        trainee.setLastName(updated.lastName());
+        trainee.setDateOfBirth(updated.dateOfBirth());
+        trainee.setAddress(updated.address());
         traineeDAO.update(trainee);
         log.info("Updated trainee '{}'", trainee.getUsername());
-        return trainee;
+        return DtoMapper.toDto(trainee);
     }
 
     @Transactional
@@ -135,17 +140,18 @@ public class TraineeService {
     }
 
     @Transactional(readOnly = true)
-    public List<Training> getTrainings(String authUsername, String authPassword, String username,
-                                       LocalDate fromDate, LocalDate toDate,
-                                       String trainerName, String trainingTypeName) {
+    public List<TrainingDTO> getTrainings(String authUsername, String authPassword, String username,
+                                          LocalDate fromDate, LocalDate toDate,
+                                          String trainerName, String trainingTypeName) {
         authenticationService.authenticate(authUsername, authPassword);
         log.debug("Fetching trainings of trainee '{}' with criteria", username);
-        return trainingDAO.findTraineeTrainings(username, fromDate, toDate, trainerName, trainingTypeName);
+        return DtoMapper.toTrainingDtos(
+                trainingDAO.findTraineeTrainings(username, fromDate, toDate, trainerName, trainingTypeName));
     }
 
     @Transactional
-    public Trainee updateTrainersList(String authUsername, String authPassword,
-                                      String traineeUsername, List<String> trainerUsernames) {
+    public TraineeDTO updateTrainersList(String authUsername, String authPassword,
+                                         String traineeUsername, List<String> trainerUsernames) {
         authenticationService.authenticate(authUsername, authPassword);
         Trainee trainee = findRequired(traineeUsername);
         Set<Trainer> trainers = new HashSet<>();
@@ -157,7 +163,7 @@ public class TraineeService {
         trainee.getTrainers().addAll(trainers);
         traineeDAO.update(trainee);
         log.info("Updated trainers list of trainee '{}' ({} trainers)", traineeUsername, trainers.size());
-        return trainee;
+        return DtoMapper.toDto(trainee);
     }
 
     // Activate/de-activate is not idempotent: repeating the same action is an error

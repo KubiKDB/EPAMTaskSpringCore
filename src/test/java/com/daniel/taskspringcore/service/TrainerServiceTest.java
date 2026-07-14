@@ -2,6 +2,7 @@ package com.daniel.taskspringcore.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -18,7 +19,11 @@ import org.mockito.MockitoAnnotations;
 
 import com.daniel.taskspringcore.dao.TrainerDAO;
 import com.daniel.taskspringcore.dao.TrainingDAO;
+import com.daniel.taskspringcore.dao.TrainingTypeDAO;
 import com.daniel.taskspringcore.dao.UserDAO;
+import com.daniel.taskspringcore.dto.CreateTrainerDTO;
+import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.exception.EntityNotFoundException;
 import com.daniel.taskspringcore.model.Trainer;
 import com.daniel.taskspringcore.model.TrainingType;
@@ -31,6 +36,8 @@ class TrainerServiceTest {
     private TrainerDAO trainerDAO;
     @Mock
     private TrainingDAO trainingDAO;
+    @Mock
+    private TrainingTypeDAO trainingTypeDAO;
     @Mock
     private UserDAO userDAO;
     @Mock
@@ -55,25 +62,31 @@ class TrainerServiceTest {
 
     @Test
     void createComputesCredentialsAndActivatesTrainer() {
+        when(trainingTypeDAO.findByName("Yoga")).thenReturn(Optional.of(new TrainingType("Yoga")));
         when(userDAO.findAllUsernames()).thenReturn(List.of());
         when(credentialGenerator.generateUsername(eq("Anna"), eq("Jones"), anySet()))
                 .thenReturn("Anna.Jones");
         when(credentialGenerator.generatePassword()).thenReturn("xyz9876543");
 
-        Trainer result = service.create(newTrainer());
+        UserCredentialsDTO result = service.create(new CreateTrainerDTO("Anna", "Jones", "Yoga"));
 
-        assertThat(result.getUsername()).isEqualTo("Anna.Jones");
-        assertThat(result.getPassword()).isEqualTo("xyz9876543");
-        assertThat(result.isActive()).isTrue();
-        verify(trainerDAO).save(result);
+        assertThat(result.username()).isEqualTo("Anna.Jones");
+        assertThat(result.password()).isEqualTo("xyz9876543");
+        verify(trainerDAO).save(any(Trainer.class));
     }
 
     @Test
     void createRejectsMissingSpecialization() {
-        Trainer t = newTrainer();
-        t.setSpecialization(null);
+        assertThatThrownBy(() -> service.create(new CreateTrainerDTO("Anna", "Jones", null)))
+                .isInstanceOf(RuntimeException.class);
+    }
 
-        assertThatThrownBy(() -> service.create(t)).isInstanceOf(RuntimeException.class);
+    @Test
+    void createRejectsUnknownSpecialization() {
+        when(trainingTypeDAO.findByName("Unknown")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(new CreateTrainerDTO("Anna", "Jones", "Unknown")))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
@@ -82,9 +95,10 @@ class TrainerServiceTest {
         t.setUsername("anna.jones");
         when(trainerDAO.findByUsername("anna.jones")).thenReturn(Optional.of(t));
 
-        Trainer result = service.selectByUsername("anna.jones", "pw", "anna.jones");
+        TrainerDTO result = service.selectByUsername("anna.jones", "pw", "anna.jones");
 
-        assertThat(result).isSameAs(t);
+        assertThat(result.username()).isEqualTo("anna.jones");
+        assertThat(result.specialization()).isEqualTo("Yoga");
     }
 
     @Test
@@ -104,6 +118,21 @@ class TrainerServiceTest {
         service.changePassword("anna.jones", "oldPassword1", "newPassword1");
 
         assertThat(t.getPassword()).isEqualTo("newPassword1");
+        verify(trainerDAO).update(t);
+    }
+
+    @Test
+    void updateModifiesProfileFields() {
+        Trainer t = newTrainer();
+        t.setUsername("anna.jones");
+        when(trainerDAO.findByUsername("anna.jones")).thenReturn(Optional.of(t));
+        when(trainingTypeDAO.findByName("Strength")).thenReturn(Optional.of(new TrainingType("Strength")));
+
+        TrainerDTO result = service.update("anna.jones", "pw",
+                new TrainerDTO("anna.jones", "Annie", "Jonson", true, "Strength"));
+
+        assertThat(result.firstName()).isEqualTo("Annie");
+        assertThat(result.specialization()).isEqualTo("Strength");
         verify(trainerDAO).update(t);
     }
 

@@ -5,9 +5,12 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.daniel.taskspringcore.model.Trainee;
-import com.daniel.taskspringcore.model.Trainer;
-import com.daniel.taskspringcore.model.Training;
+import com.daniel.taskspringcore.dto.CreateTraineeDTO;
+import com.daniel.taskspringcore.dto.CreateTrainerDTO;
+import com.daniel.taskspringcore.dto.TraineeDTO;
+import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.TrainingDTO;
+import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
@@ -32,12 +35,12 @@ public class GymFacade {
 
     // 1-2. Create profiles (no authentication required)
 
-    public Trainee createTrainee(Trainee trainee) {
+    public UserCredentialsDTO createTrainee(CreateTraineeDTO trainee) {
         log.debug("Facade: create trainee");
         return traineeService.create(trainee);
     }
 
-    public Trainer createTrainer(Trainer trainer) {
+    public UserCredentialsDTO createTrainer(CreateTrainerDTO trainer) {
         log.debug("Facade: create trainer");
         return trainerService.create(trainer);
     }
@@ -56,12 +59,12 @@ public class GymFacade {
 
     // 5-6. Select profile by username
 
-    public Trainer getTrainerByUsername(String authUsername, String authPassword, String username) {
+    public TrainerDTO getTrainerByUsername(String authUsername, String authPassword, String username) {
         log.debug("Facade: get trainer {}", username);
         return trainerService.selectByUsername(authUsername, authPassword, username);
     }
 
-    public Trainee getTraineeByUsername(String authUsername, String authPassword, String username) {
+    public TraineeDTO getTraineeByUsername(String authUsername, String authPassword, String username) {
         log.debug("Facade: get trainee {}", username);
         return traineeService.selectByUsername(authUsername, authPassword, username);
     }
@@ -80,13 +83,13 @@ public class GymFacade {
 
     // 9-10. Update profiles
 
-    public Trainer updateTrainer(String authUsername, String authPassword, Trainer trainer) {
-        log.debug("Facade: update trainer {}", trainer.getUsername());
+    public TrainerDTO updateTrainer(String authUsername, String authPassword, TrainerDTO trainer) {
+        log.debug("Facade: update trainer {}", trainer.username());
         return trainerService.update(authUsername, authPassword, trainer);
     }
 
-    public Trainee updateTrainee(String authUsername, String authPassword, Trainee trainee) {
-        log.debug("Facade: update trainee {}", trainee.getUsername());
+    public TraineeDTO updateTrainee(String authUsername, String authPassword, TraineeDTO trainee) {
+        log.debug("Facade: update trainee {}", trainee.username());
         return traineeService.update(authUsername, authPassword, trainee);
     }
 
@@ -121,25 +124,25 @@ public class GymFacade {
 
     // 14-15. Trainings lists by criteria
 
-    public List<Training> getTraineeTrainings(String authUsername, String authPassword, String username,
-                                              LocalDate fromDate, LocalDate toDate,
-                                              String trainerName, String trainingTypeName) {
+    public List<TrainingDTO> getTraineeTrainings(String authUsername, String authPassword, String username,
+                                                 LocalDate fromDate, LocalDate toDate,
+                                                 String trainerName, String trainingTypeName) {
         log.debug("Facade: get trainings of trainee {}", username);
         return traineeService.getTrainings(authUsername, authPassword, username,
                 fromDate, toDate, trainerName, trainingTypeName);
     }
 
-    public List<Training> getTrainerTrainings(String authUsername, String authPassword, String username,
-                                              LocalDate fromDate, LocalDate toDate, String traineeName) {
+    public List<TrainingDTO> getTrainerTrainings(String authUsername, String authPassword, String username,
+                                                 LocalDate fromDate, LocalDate toDate, String traineeName) {
         log.debug("Facade: get trainings of trainer {}", username);
         return trainerService.getTrainings(authUsername, authPassword, username, fromDate, toDate, traineeName);
     }
 
     // 16. Add training
 
-    public Training addTraining(String authUsername, String authPassword,
-                                String traineeUsername, String trainerUsername, String trainingName,
-                                String trainingTypeName, LocalDate trainingDate, Integer trainingDurationMinutes) {
+    public TrainingDTO addTraining(String authUsername, String authPassword,
+                                   String traineeUsername, String trainerUsername, String trainingName,
+                                   String trainingTypeName, LocalDate trainingDate, Integer trainingDurationMinutes) {
         log.debug("Facade: add training '{}'", trainingName);
         return trainingService.create(authUsername, authPassword, traineeUsername, trainerUsername,
                 trainingName, trainingTypeName, trainingDate, trainingDurationMinutes);
@@ -147,15 +150,15 @@ public class GymFacade {
 
     // 17. Trainers not assigned to a trainee
 
-    public List<Trainer> getUnassignedTrainers(String authUsername, String authPassword, String traineeUsername) {
+    public List<TrainerDTO> getUnassignedTrainers(String authUsername, String authPassword, String traineeUsername) {
         log.debug("Facade: get trainers not assigned to trainee {}", traineeUsername);
         return trainerService.getUnassignedTrainers(authUsername, authPassword, traineeUsername);
     }
 
     // 18. Update trainee's trainers list
 
-    public Trainee updateTraineeTrainers(String authUsername, String authPassword,
-                                         String traineeUsername, List<String> trainerUsernames) {
+    public TraineeDTO updateTraineeTrainers(String authUsername, String authPassword,
+                                            String traineeUsername, List<String> trainerUsernames) {
         log.debug("Facade: update trainers list of trainee {}", traineeUsername);
         return traineeService.updateTrainersList(authUsername, authPassword, traineeUsername, trainerUsernames);
     }
