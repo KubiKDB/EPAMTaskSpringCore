@@ -2,6 +2,7 @@ package com.daniel.taskspringcore.web;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.slf4j.MDC;
 import org.springframework.core.annotation.Order;
@@ -27,7 +28,7 @@ public class TransactionLoggingFilter extends OncePerRequestFilter {
         response.setHeader(ApiConstants.TRANSACTION_ID_HEADER, transactionId);
 
         String endpoint = request.getMethod() + " " + request.getRequestURI();
-        String query = request.getQueryString();
+        String query = maskSensitive(request.getQueryString());
         log.info("Incoming REST call: {}{}", endpoint, query != null ? "?" + query : "");
 
         try {
@@ -40,4 +41,14 @@ public class TransactionLoggingFilter extends OncePerRequestFilter {
             MDC.remove(ApiConstants.TRANSACTION_ID_MDC_KEY);
         }
     }
+
+    static String maskSensitive(String query) {
+        if (query == null || query.isBlank()) {
+            return query;
+        }
+        return SENSITIVE_PARAM.matcher(query).replaceAll("$1=***");
+    }
+
+    private static final Pattern SENSITIVE_PARAM = Pattern.compile(
+            "(?i)\\b(password|oldPassword|newPassword|pwd|token|secret)=[^&]*");
 }

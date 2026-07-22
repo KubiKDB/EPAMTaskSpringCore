@@ -45,14 +45,14 @@ class ApiIntegrationTest {
 
         String password = creds.replaceAll(".*\"password\":\"([^\"]+)\".*", "$1");
 
-        mockMvc.perform(get("/api/auth/login")
-                        .param("username", "Ivy.Bell")
-                        .param("password", password))
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"Ivy.Bell\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/auth/login")
-                        .param("username", "Ivy.Bell")
-                        .param("password", "wrong-password"))
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"Ivy.Bell\",\"password\":\"wrong-password\"}"))
                 .andExpect(status().isUnauthorized());
     }
 

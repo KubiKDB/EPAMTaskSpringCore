@@ -13,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import com.daniel.taskspringcore.dao.UserDAO;
 import com.daniel.taskspringcore.dto.CreateTraineeDTO;
 import com.daniel.taskspringcore.dto.CreateTrainerDTO;
 import com.daniel.taskspringcore.dto.TraineeDTO;
@@ -25,6 +24,7 @@ import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
 import com.daniel.taskspringcore.service.TrainingTypeService;
+import com.daniel.taskspringcore.service.UserService;
 
 class GymFacadeTest {
 
@@ -37,7 +37,7 @@ class GymFacadeTest {
     @Mock
     private TrainingTypeService trainingTypeService;
     @Mock
-    private UserDAO userDAO;
+    private UserService userService;
     @InjectMocks
     private GymFacade facade;
 

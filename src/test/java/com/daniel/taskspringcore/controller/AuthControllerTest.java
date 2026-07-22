@@ -2,7 +2,7 @@ package com.daniel.taskspringcore.controller;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,9 +26,9 @@ class AuthControllerTest {
 
     @Test
     void loginReturns200() throws Exception {
-        mockMvc.perform(get("/api/auth/login")
-                        .param("username", "John.Smith")
-                        .param("password", "pw"))
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"John.Smith\",\"password\":\"pw\"}"))
                 .andExpect(status().isOk());
 
         verify(facade).login("John.Smith", "pw");
@@ -38,15 +38,17 @@ class AuthControllerTest {
     void loginWithBadCredentialsReturns401() throws Exception {
         doThrow(new AuthenticationException("bad")).when(facade).login("John.Smith", "wrong");
 
-        mockMvc.perform(get("/api/auth/login")
-                        .param("username", "John.Smith")
-                        .param("password", "wrong"))
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"John.Smith\",\"password\":\"wrong\"}"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void loginMissingParamReturns400() throws Exception {
-        mockMvc.perform(get("/api/auth/login").param("username", "John.Smith"))
+    void loginMissingPasswordReturns400() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"John.Smith\"}"))
                 .andExpect(status().isBadRequest());
     }
 

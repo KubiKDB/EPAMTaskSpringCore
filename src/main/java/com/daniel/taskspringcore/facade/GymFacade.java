@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.daniel.taskspringcore.dao.UserDAO;
 import com.daniel.taskspringcore.dto.CreateTraineeDTO;
 import com.daniel.taskspringcore.dto.CreateTrainerDTO;
 import com.daniel.taskspringcore.dto.TraineeDTO;
@@ -14,13 +13,11 @@ import com.daniel.taskspringcore.dto.TrainerProfileDTO;
 import com.daniel.taskspringcore.dto.TrainingDTO;
 import com.daniel.taskspringcore.dto.TrainingTypeDTO;
 import com.daniel.taskspringcore.dto.UserCredentialsDTO;
-import com.daniel.taskspringcore.exception.EntityNotFoundException;
-import com.daniel.taskspringcore.model.Trainee;
-import com.daniel.taskspringcore.model.User;
 import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
 import com.daniel.taskspringcore.service.TrainingTypeService;
+import com.daniel.taskspringcore.service.UserService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,18 +29,18 @@ public class GymFacade {
     private final TrainerService trainerService;
     private final TrainingService trainingService;
     private final TrainingTypeService trainingTypeService;
-    private final UserDAO userDAO;
+    private final UserService userService;
 
     public GymFacade(TraineeService traineeService,
                      TrainerService trainerService,
                      TrainingService trainingService,
                      TrainingTypeService trainingTypeService,
-                     UserDAO userDAO) {
+                     UserService userService) {
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
         this.trainingTypeService = trainingTypeService;
-        this.userDAO = userDAO;
+        this.userService = userService;
     }
 
     // 1-2. Create profiles (no authentication required)
@@ -73,7 +70,7 @@ public class GymFacade {
     // Login
     public void login(String username, String password) {
         log.debug("Facade: login {}", username);
-        traineeService.authenticate(username, password);
+        userService.authenticate(username, password);
     }
 
     // 5-6. Select profile by username
@@ -103,13 +100,13 @@ public class GymFacade {
     // Change login for any user
     public void changePassword(String username, String oldPassword, String newPassword) {
         log.debug("Facade: change login of user {}", username);
-        User user = userDAO.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + username));
-        if (user instanceof Trainee) {
-            traineeService.changePassword(username, oldPassword, newPassword);
-        } else {
-            trainerService.changePassword(username, oldPassword, newPassword);
-        }
+        userService.changePassword(username, oldPassword, newPassword);
+    }
+
+    // Activate/de-activate any user, whether trainee or trainer (not idempotent)
+    public void setUserActive(String authUsername, String authPassword, String username, boolean active) {
+        log.debug("Facade: set active={} for user {}", active, username);
+        userService.setActive(authUsername, authPassword, username, active);
     }
 
     // 9-10. Update profiles
