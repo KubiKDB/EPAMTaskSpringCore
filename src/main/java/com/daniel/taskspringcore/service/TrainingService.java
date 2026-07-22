@@ -70,8 +70,10 @@ public class TrainingService {
                 .orElseThrow(() -> new EntityNotFoundException("Trainee not found: " + traineeUsername));
         Trainer trainer = trainerDAO.findByUsername(trainerUsername)
                 .orElseThrow(() -> new EntityNotFoundException("Trainer not found: " + trainerUsername));
-        TrainingType trainingType = trainingTypeDAO.findByName(trainingTypeName)
-                .orElseThrow(() -> new EntityNotFoundException("Training type not found: " + trainingTypeName));
+        TrainingType trainingType = (trainingTypeName == null || trainingTypeName.isBlank())
+                ? trainer.getSpecialization()
+                : trainingTypeDAO.findByName(trainingTypeName)
+                        .orElseThrow(() -> new EntityNotFoundException("Training type not found: " + trainingTypeName));
 
         Training training = new Training(trainee, trainer, trainingName, trainingType,
                 trainingDate, trainingDurationMinutes);

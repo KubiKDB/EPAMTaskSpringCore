@@ -23,6 +23,7 @@ import com.daniel.taskspringcore.dao.TrainingTypeDAO;
 import com.daniel.taskspringcore.dao.UserDAO;
 import com.daniel.taskspringcore.dto.CreateTrainerDTO;
 import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.TrainerProfileDTO;
 import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.exception.EntityNotFoundException;
 import com.daniel.taskspringcore.model.Trainer;
@@ -95,10 +96,11 @@ class TrainerServiceTest {
         t.setUsername("anna.jones");
         when(trainerDAO.findByUsername("anna.jones")).thenReturn(Optional.of(t));
 
-        TrainerDTO result = service.selectByUsername("anna.jones", "pw", "anna.jones");
+        TrainerProfileDTO result = service.selectByUsername("anna.jones", "pw", "anna.jones");
 
         assertThat(result.username()).isEqualTo("anna.jones");
         assertThat(result.specialization()).isEqualTo("Yoga");
+        assertThat(result.trainees()).isEmpty();
     }
 
     @Test
@@ -122,17 +124,18 @@ class TrainerServiceTest {
     }
 
     @Test
-    void updateModifiesProfileFields() {
+    void updateModifiesProfileFieldsButKeepsSpecializationReadOnly() {
         Trainer t = newTrainer();
         t.setUsername("anna.jones");
         when(trainerDAO.findByUsername("anna.jones")).thenReturn(Optional.of(t));
-        when(trainingTypeDAO.findByName("Strength")).thenReturn(Optional.of(new TrainingType("Strength")));
 
-        TrainerDTO result = service.update("anna.jones", "pw",
-                new TrainerDTO("anna.jones", "Annie", "Jonson", true, "Strength"));
+        TrainerProfileDTO result = service.update("anna.jones", "pw",
+                new TrainerDTO("anna.jones", "Annie", "Jonson", false, "Strength"));
 
         assertThat(result.firstName()).isEqualTo("Annie");
-        assertThat(result.specialization()).isEqualTo("Strength");
+        assertThat(result.lastName()).isEqualTo("Jonson");
+        assertThat(result.specialization()).isEqualTo("Yoga");
+        assertThat(result.active()).isFalse();
         verify(trainerDAO).update(t);
     }
 

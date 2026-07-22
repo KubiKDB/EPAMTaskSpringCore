@@ -16,6 +16,7 @@ import com.daniel.taskspringcore.dao.UserDAO;
 import com.daniel.taskspringcore.dto.CreateTrainerDTO;
 import com.daniel.taskspringcore.dto.DtoMapper;
 import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.TrainerProfileDTO;
 import com.daniel.taskspringcore.dto.TrainingDTO;
 import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.exception.EntityNotFoundException;
@@ -91,10 +92,10 @@ public class TrainerService {
     }
 
     @Transactional(readOnly = true)
-    public TrainerDTO selectByUsername(String authUsername, String authPassword, String username) {
+    public TrainerProfileDTO selectByUsername(String authUsername, String authPassword, String username) {
         authenticationService.authenticate(authUsername, authPassword);
         log.debug("Selecting trainer '{}'", username);
-        return DtoMapper.toDto(findRequired(username));
+        return DtoMapper.toProfileDto(findRequired(username));
     }
 
     @Transactional
@@ -108,19 +109,18 @@ public class TrainerService {
     }
 
     @Transactional
-    public TrainerDTO update(String authUsername, String authPassword, TrainerDTO updated) {
+    public TrainerProfileDTO update(String authUsername, String authPassword, TrainerDTO updated) {
         authenticationService.authenticate(authUsername, authPassword);
         ValidationUtils.requireNonBlank(updated.username(), "username");
         ValidationUtils.requireNonBlank(updated.firstName(), "firstName");
         ValidationUtils.requireNonBlank(updated.lastName(), "lastName");
-        ValidationUtils.requireNonBlank(updated.specialization(), "specialization");
         Trainer trainer = findRequired(updated.username());
         trainer.setFirstName(updated.firstName());
         trainer.setLastName(updated.lastName());
-        trainer.setSpecialization(findRequiredType(updated.specialization()));
+        trainer.setActive(updated.active());
         trainerDAO.update(trainer);
         log.info("Updated trainer '{}'", trainer.getUsername());
-        return DtoMapper.toDto(trainer);
+        return DtoMapper.toProfileDto(trainer);
     }
 
     @Transactional

@@ -5,15 +5,22 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.daniel.taskspringcore.dao.UserDAO;
 import com.daniel.taskspringcore.dto.CreateTraineeDTO;
 import com.daniel.taskspringcore.dto.CreateTrainerDTO;
 import com.daniel.taskspringcore.dto.TraineeDTO;
 import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.TrainerProfileDTO;
 import com.daniel.taskspringcore.dto.TrainingDTO;
+import com.daniel.taskspringcore.dto.TrainingTypeDTO;
 import com.daniel.taskspringcore.dto.UserCredentialsDTO;
+import com.daniel.taskspringcore.exception.EntityNotFoundException;
+import com.daniel.taskspringcore.model.Trainee;
+import com.daniel.taskspringcore.model.User;
 import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
+import com.daniel.taskspringcore.service.TrainingTypeService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,13 +31,19 @@ public class GymFacade {
     private final TraineeService traineeService;
     private final TrainerService trainerService;
     private final TrainingService trainingService;
+    private final TrainingTypeService trainingTypeService;
+    private final UserDAO userDAO;
 
     public GymFacade(TraineeService traineeService,
                      TrainerService trainerService,
-                     TrainingService trainingService) {
+                     TrainingService trainingService,
+                     TrainingTypeService trainingTypeService,
+                     UserDAO userDAO) {
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
+        this.trainingTypeService = trainingTypeService;
+        this.userDAO = userDAO;
     }
 
     // 1-2. Create profiles (no authentication required)
@@ -57,9 +70,15 @@ public class GymFacade {
         trainerService.authenticate(username, password);
     }
 
+    // Login
+    public void login(String username, String password) {
+        log.debug("Facade: login {}", username);
+        traineeService.authenticate(username, password);
+    }
+
     // 5-6. Select profile by username
 
-    public TrainerDTO getTrainerByUsername(String authUsername, String authPassword, String username) {
+    public TrainerProfileDTO getTrainerByUsername(String authUsername, String authPassword, String username) {
         log.debug("Facade: get trainer {}", username);
         return trainerService.selectByUsername(authUsername, authPassword, username);
     }
@@ -81,9 +100,21 @@ public class GymFacade {
         trainerService.changePassword(username, oldPassword, newPassword);
     }
 
+    // Change login for any user
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        log.debug("Facade: change login of user {}", username);
+        User user = userDAO.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + username));
+        if (user instanceof Trainee) {
+            traineeService.changePassword(username, oldPassword, newPassword);
+        } else {
+            trainerService.changePassword(username, oldPassword, newPassword);
+        }
+    }
+
     // 9-10. Update profiles
 
-    public TrainerDTO updateTrainer(String authUsername, String authPassword, TrainerDTO trainer) {
+    public TrainerProfileDTO updateTrainer(String authUsername, String authPassword, TrainerDTO trainer) {
         log.debug("Facade: update trainer {}", trainer.username());
         return trainerService.update(authUsername, authPassword, trainer);
     }
@@ -148,6 +179,13 @@ public class GymFacade {
                 trainingName, trainingTypeName, trainingDate, trainingDurationMinutes);
     }
 
+    public TrainingDTO addTraining(String authUsername, String authPassword,
+                                   String traineeUsername, String trainerUsername, String trainingName,
+                                   LocalDate trainingDate, Integer trainingDurationMinutes) {
+        return addTraining(authUsername, authPassword, traineeUsername, trainerUsername,
+                trainingName, null, trainingDate, trainingDurationMinutes);
+    }
+
     // 17. Trainers not assigned to a trainee
 
     public List<TrainerDTO> getUnassignedTrainers(String authUsername, String authPassword, String traineeUsername) {
@@ -161,5 +199,12 @@ public class GymFacade {
                                             String traineeUsername, List<String> trainerUsernames) {
         log.debug("Facade: update trainers list of trainee {}", traineeUsername);
         return traineeService.updateTrainersList(authUsername, authPassword, traineeUsername, trainerUsernames);
+    }
+
+    // 19. Training types reference list (no authentication)
+
+    public List<TrainingTypeDTO> getTrainingTypes() {
+        log.debug("Facade: get training types");
+        return trainingTypeService.getAll();
     }
 }

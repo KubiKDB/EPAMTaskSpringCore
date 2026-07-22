@@ -116,6 +116,7 @@ public class TraineeService {
         trainee.setLastName(updated.lastName());
         trainee.setDateOfBirth(updated.dateOfBirth());
         trainee.setAddress(updated.address());
+        trainee.setActive(updated.active());
         traineeDAO.update(trainee);
         log.info("Updated trainee '{}'", trainee.getUsername());
         return DtoMapper.toDto(trainee);

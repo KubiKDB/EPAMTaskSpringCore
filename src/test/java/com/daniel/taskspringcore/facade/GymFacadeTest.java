@@ -13,15 +13,18 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import com.daniel.taskspringcore.dao.UserDAO;
 import com.daniel.taskspringcore.dto.CreateTraineeDTO;
 import com.daniel.taskspringcore.dto.CreateTrainerDTO;
 import com.daniel.taskspringcore.dto.TraineeDTO;
 import com.daniel.taskspringcore.dto.TrainerDTO;
+import com.daniel.taskspringcore.dto.TrainerProfileDTO;
 import com.daniel.taskspringcore.dto.TrainingDTO;
 import com.daniel.taskspringcore.dto.UserCredentialsDTO;
 import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
+import com.daniel.taskspringcore.service.TrainingTypeService;
 
 class GymFacadeTest {
 
@@ -31,6 +34,10 @@ class GymFacadeTest {
     private TrainerService trainerService;
     @Mock
     private TrainingService trainingService;
+    @Mock
+    private TrainingTypeService trainingTypeService;
+    @Mock
+    private UserDAO userDAO;
     @InjectMocks
     private GymFacade facade;
 
@@ -45,6 +52,10 @@ class GymFacadeTest {
 
     private TrainerDTO trainerDto() {
         return new TrainerDTO("anna.jones", "Anna", "Jones", true, "Yoga");
+    }
+
+    private TrainerProfileDTO trainerProfileDto() {
+        return new TrainerProfileDTO("anna.jones", "Anna", "Jones", true, "Yoga", List.of());
     }
 
     @Test
@@ -75,7 +86,7 @@ class GymFacadeTest {
     @Test
     void selectByUsernameOperationsDelegateToServices() {
         TraineeDTO trainee = traineeDto();
-        TrainerDTO trainer = trainerDto();
+        TrainerProfileDTO trainer = trainerProfileDto();
         when(traineeService.selectByUsername("a", "pw", "john.smith")).thenReturn(trainee);
         when(trainerService.selectByUsername("a", "pw", "anna.jones")).thenReturn(trainer);
 
@@ -96,11 +107,12 @@ class GymFacadeTest {
     void updateOperationsDelegateToServices() {
         TraineeDTO trainee = traineeDto();
         TrainerDTO trainer = trainerDto();
+        TrainerProfileDTO trainerProfile = trainerProfileDto();
         when(traineeService.update("a", "pw", trainee)).thenReturn(trainee);
-        when(trainerService.update("a", "pw", trainer)).thenReturn(trainer);
+        when(trainerService.update("a", "pw", trainer)).thenReturn(trainerProfile);
 
         assertThat(facade.updateTrainee("a", "pw", trainee)).isSameAs(trainee);
-        assertThat(facade.updateTrainer("a", "pw", trainer)).isSameAs(trainer);
+        assertThat(facade.updateTrainer("a", "pw", trainer)).isSameAs(trainerProfile);
     }
 
     @Test
