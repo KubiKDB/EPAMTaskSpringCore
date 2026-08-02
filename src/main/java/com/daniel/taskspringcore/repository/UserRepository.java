@@ -23,6 +23,10 @@ public class UserRepository {
                 .findFirst();
     }
 
+    public long count() {
+        return em.createQuery("SELECT COUNT(u) FROM User u", Long.class).getSingleResult();
+    }
+
     public List<String> findAllUsernames() {
         return em.createQuery("SELECT u.username FROM User u", String.class).getResultList();
     }

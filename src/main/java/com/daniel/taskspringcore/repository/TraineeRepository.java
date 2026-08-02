@@ -36,6 +36,11 @@ public class TraineeRepository {
         return em.createQuery("SELECT t FROM Trainee t", Trainee.class).getResultList();
     }
 
+    public long countActive() {
+        return em.createQuery("SELECT COUNT(t) FROM Trainee t WHERE t.isActive = true", Long.class)
+                .getSingleResult();
+    }
+
     public void deleteByUsername(String username) {
         findByUsername(username).ifPresent(em::remove);
     }

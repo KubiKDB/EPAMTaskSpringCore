@@ -20,6 +20,7 @@ import com.daniel.taskspringcore.dto.TrainerDTO;
 import com.daniel.taskspringcore.dto.TrainerProfileDTO;
 import com.daniel.taskspringcore.dto.TrainingDTO;
 import com.daniel.taskspringcore.dto.UserCredentialsDTO;
+import com.daniel.taskspringcore.metrics.GymMetrics;
 import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
@@ -38,6 +39,8 @@ class GymFacadeTest {
     private TrainingTypeService trainingTypeService;
     @Mock
     private UserService userService;
+    @Mock
+    private GymMetrics metrics;
     @InjectMocks
     private GymFacade facade;
 

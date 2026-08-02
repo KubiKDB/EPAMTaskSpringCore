@@ -24,4 +24,8 @@ public class TrainingTypeDAO {
     public List<TrainingType> findAll() {
         return trainingTypeRepository.findAll();
     }
+
+    public long count() {
+        return trainingTypeRepository.count();
+    }
 }

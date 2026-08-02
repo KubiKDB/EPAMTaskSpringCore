@@ -24,4 +24,8 @@ public class UserDAO {
     public List<String> findAllUsernames() {
         return userRepository.findAllUsernames();
     }
+
+    public long count() {
+        return userRepository.count();
+    }
 }

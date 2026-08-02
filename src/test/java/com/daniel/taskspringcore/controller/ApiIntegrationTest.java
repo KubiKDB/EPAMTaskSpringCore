@@ -63,4 +63,16 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/trainees']").exists())
                 .andExpect(jsonPath("$.info.title").value("Gym CRM REST API"));
     }
+
+    @Test
+    void unknownPathsAreReportedAsNotFoundRatherThanServerErrors() throws Exception {
+        mockMvc.perform(get("/api/does-not-exist"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.transactionId").exists());
+
+        mockMvc.perform(get("/actuator/no-such-endpoint"))
+                .andExpect(status().isNotFound());
+    }
 }

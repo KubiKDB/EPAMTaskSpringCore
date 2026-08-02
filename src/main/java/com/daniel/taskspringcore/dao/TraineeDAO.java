@@ -33,6 +33,10 @@ public class TraineeDAO {
         return traineeRepository.findAll();
     }
 
+    public long countActive() {
+        return traineeRepository.countActive();
+    }
+
     public void deleteByUsername(String username) {
         traineeRepository.deleteByUsername(username);
     }

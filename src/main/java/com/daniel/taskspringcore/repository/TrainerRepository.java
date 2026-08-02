@@ -36,6 +36,11 @@ public class TrainerRepository {
         return em.createQuery("SELECT t FROM Trainer t", Trainer.class).getResultList();
     }
 
+    public long countActive() {
+        return em.createQuery("SELECT COUNT(t) FROM Trainer t WHERE t.isActive = true", Long.class)
+                .getSingleResult();
+    }
+
     public List<Trainer> findNotAssignedToTrainee(String traineeUsername) {
         return em.createQuery("""
                         SELECT tr FROM Trainer tr WHERE tr NOT IN (

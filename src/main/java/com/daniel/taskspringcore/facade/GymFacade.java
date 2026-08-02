@@ -13,6 +13,7 @@ import com.daniel.taskspringcore.dto.TrainerProfileDTO;
 import com.daniel.taskspringcore.dto.TrainingDTO;
 import com.daniel.taskspringcore.dto.TrainingTypeDTO;
 import com.daniel.taskspringcore.dto.UserCredentialsDTO;
+import com.daniel.taskspringcore.metrics.GymMetrics;
 import com.daniel.taskspringcore.service.TraineeService;
 import com.daniel.taskspringcore.service.TrainerService;
 import com.daniel.taskspringcore.service.TrainingService;
@@ -30,29 +31,36 @@ public class GymFacade {
     private final TrainingService trainingService;
     private final TrainingTypeService trainingTypeService;
     private final UserService userService;
+    private final GymMetrics metrics;
 
     public GymFacade(TraineeService traineeService,
                      TrainerService trainerService,
                      TrainingService trainingService,
                      TrainingTypeService trainingTypeService,
-                     UserService userService) {
+                     UserService userService,
+                     GymMetrics metrics) {
         this.traineeService = traineeService;
         this.trainerService = trainerService;
         this.trainingService = trainingService;
         this.trainingTypeService = trainingTypeService;
         this.userService = userService;
+        this.metrics = metrics;
     }
 
     // 1-2. Create profiles (no authentication required)
 
     public UserCredentialsDTO createTrainee(CreateTraineeDTO trainee) {
         log.debug("Facade: create trainee");
-        return traineeService.create(trainee);
+        UserCredentialsDTO credentials = traineeService.create(trainee);
+        metrics.recordTraineeRegistration();
+        return credentials;
     }
 
     public UserCredentialsDTO createTrainer(CreateTrainerDTO trainer) {
         log.debug("Facade: create trainer");
-        return trainerService.create(trainer);
+        UserCredentialsDTO credentials = trainerService.create(trainer);
+        metrics.recordTrainerRegistration();
+        return credentials;
     }
 
     // 3-4. Username and password matching
@@ -172,8 +180,10 @@ public class GymFacade {
                                    String traineeUsername, String trainerUsername, String trainingName,
                                    String trainingTypeName, LocalDate trainingDate, Integer trainingDurationMinutes) {
         log.debug("Facade: add training '{}'", trainingName);
-        return trainingService.create(authUsername, authPassword, traineeUsername, trainerUsername,
-                trainingName, trainingTypeName, trainingDate, trainingDurationMinutes);
+        TrainingDTO training = trainingService.create(authUsername, authPassword, traineeUsername,
+                trainerUsername, trainingName, trainingTypeName, trainingDate, trainingDurationMinutes);
+        metrics.recordTrainingCreated(training.trainingTypeName());
+        return training;
     }
 
     public TrainingDTO addTraining(String authUsername, String authPassword,

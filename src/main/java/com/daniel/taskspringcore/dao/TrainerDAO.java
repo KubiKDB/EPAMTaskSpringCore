@@ -29,6 +29,10 @@ public class TrainerDAO {
         return trainerRepository.findByUsername(username);
     }
 
+    public long countActive() {
+        return trainerRepository.countActive();
+    }
+
     public List<Trainer> findAll() {
         return trainerRepository.findAll();
     }
